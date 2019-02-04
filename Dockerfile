@@ -1,11 +1,15 @@
 FROM ubuntu:bionic
 
 # Install MoCOCrW dependencies
-RUN apt update && apt -y install build-essential cmake pkg-config libboost-dev libssl1.1-dev openssl1.1 googletest
+RUN apt update && apt -y install build-essential cmake pkg-config libboost-dev googletest git
 
-# MoCOCrW tests depend on OpenSSL output, which changed from 1.0 to 1.1. Force
-# use of 1.0 until the tests support both.
-RUN ln -fs /usr/lib/ssl1.1/openssl /usr/bin/openssl
+# Install OpenSSL1.1.1
+RUN git clone https://github.com/openssl/openssl.git
+RUN cd openssl && git checkout OpenSSL_1_1_1-stable \ 
+               && ./config -Wl,--enable-new-dtags,-rpath,'$(LIBRPATH)' \
+               && make \
+               && make install
+RUN rm -rf openssl               
 
 # Build as user so that tests cannot modify files in /root (running tests as
 # root makes one of them fail)
